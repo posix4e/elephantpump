@@ -8,9 +8,5 @@ build = "build.rs"
 [lib]
 name = "elephantpump"
 
-[dependencies.elephantpump-sys]
-path = "./elephantpump-sys"
-
-
 [dependencies]
 libc = "*"
