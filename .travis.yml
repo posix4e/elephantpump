@@ -1,1 +1,7 @@
 language: rust
+
+addons:
+  postgresql: "9.3"
+  apt:
+    packages:
+    - libpq-dev
