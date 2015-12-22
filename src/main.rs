@@ -1,10 +1,5 @@
-extern crate libc;
-
-#[link(name = "pgcommon")]
-extern "C" {
-    pub fn pg_str_endswith(s1: *const ::libc::c_char,
-                           s2: *const ::libc::c_char) -> ::libc::c_int;
-}
+extern crate elephantpump;
+use elephantpump::*;
 
 fn main() {
     let a = std::ffi::CString::new("a").unwrap();

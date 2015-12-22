@@ -2,8 +2,7 @@
 name = "elephantpump"
 version = "0.1.0"
 authors = ["Alex Newman <posi@planet.com>"]
-build = "src/build.rs"
-links = "pgcommon"
+build = "build.rs"
 
 
 [lib]
