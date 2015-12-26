@@ -1,5 +1,5 @@
 extern crate elephantpump;
-use elephantpump::*;
+use elephantpump::libpq::*;
 
 fn main() {
     let a = std::ffi::CString::new("a").unwrap();
