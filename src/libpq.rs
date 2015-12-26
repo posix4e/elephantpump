@@ -761,9 +761,8 @@ pub struct Struct_sigevent {
     pub sigev_notify: ::libc::c_int,
     pub sigev_signo: ::libc::c_int,
     pub sigev_value: Union_sigval,
-    pub sigev_notify_function: ::std::option::Option<extern "C" fn(arg1:
-                                                                       Union_sigval)
-                                                         -> ()>,
+    pub sigev_notify_function:
+        ::std::option::Option<extern "C" fn(arg1: Union_sigval) -> ()>,
     pub sigev_notify_attributes: *mut pthread_attr_t,
 }
 impl ::std::clone::Clone for Struct_sigevent {
@@ -1434,19 +1433,15 @@ pub type _RuneCharClass = Struct_Unnamed13;
 pub struct Struct_Unnamed14 {
     pub __magic: [::libc::c_char; 8usize],
     pub __encoding: [::libc::c_char; 32usize],
-    pub __sgetrune: ::std::option::Option<extern "C" fn(arg1:
-                                                            *const ::libc::c_char,
-                                                        arg2: __darwin_size_t,
-                                                        arg3:
-                                                            *mut *const ::libc::c_char)
-                                              -> __darwin_rune_t>,
-    pub __sputrune: ::std::option::Option<extern "C" fn(arg1: __darwin_rune_t,
-                                                        arg2:
-                                                            *mut ::libc::c_char,
-                                                        arg3: __darwin_size_t,
-                                                        arg4:
-                                                            *mut *mut ::libc::c_char)
-                                              -> ::libc::c_int>,
+    pub __sgetrune: ::std::option::Option<extern "C"
+        fn(arg1: *const ::libc::c_char,
+           arg2: __darwin_size_t,
+           arg3: *mut *const ::libc::c_char) -> __darwin_rune_t>,
+    pub __sputrune: ::std::option::Option<extern "C"
+        fn(arg1: __darwin_rune_t,
+           arg2: *mut ::libc::c_char,
+           arg3: __darwin_size_t,
+           arg4: *mut *mut ::libc::c_char) -> ::libc::c_int>,
     pub __invalid_rune: __darwin_rune_t,
     pub __runetype: [__uint32_t; 256usize],
     pub __maplower: [__darwin_rune_t; 256usize],
@@ -8230,10 +8225,10 @@ pub type xl_end_of_recovery = Struct_xl_end_of_recovery;
 #[derive(Copy)]
 pub struct Struct_RmgrData {
     pub rm_name: *const ::libc::c_char,
-    pub rm_redo: ::std::option::Option<extern "C" fn(lsn: XLogRecPtr,
-                                                     rptr:
-                                                         *mut Struct_XLogRecord)
-                                           -> ()>,
+    pub rm_redo:
+        ::std::option::Option<extern "C" fn(lsn: XLogRecPtr,
+                                            rptr: *mut Struct_XLogRecord)
+                                             -> ()>,
     pub rm_desc: ::std::option::Option<extern "C" fn(buf: StringInfo,
                                                      xl_info: uint8,
                                                      rec: *mut ::libc::c_char)
@@ -8424,11 +8419,10 @@ pub struct Struct_MemoryContextMethods {
     pub delete_context: ::std::option::Option<extern "C" fn(context:
                                                                 MemoryContext)
                                                   -> ()>,
-    pub get_chunk_space: ::std::option::Option<extern "C" fn(context:
-                                                                 MemoryContext,
-                                                             pointer:
-                                                                 *mut ::libc::c_void)
-                                                   -> Size>,
+    pub get_chunk_space:
+        ::std::option::Option<extern "C" fn(context: MemoryContext,
+                                            pointer: *mut ::libc::c_void)
+                                             -> Size>,
     pub is_empty: ::std::option::Option<extern "C" fn(context: MemoryContext)
                                             -> _bool>,
     pub stats: ::std::option::Option<extern "C" fn(context: MemoryContext,
@@ -9027,13 +9021,12 @@ extern "C" {
                            buffer: *mut ::libc::c_char, buflen: size_t,
                            result: *mut *mut Struct_hostent,
                            herrno: *mut ::libc::c_int) -> ::libc::c_int;
-    pub fn pg_qsort(base: *mut ::libc::c_void, nel: size_t, elsize: size_t,
-                    cmp:
-                        ::std::option::Option<extern "C" fn(arg1:
-                                                                *const ::libc::c_void,
-                                                            arg2:
-                                                                *const ::libc::c_void)
-                                                  -> ::libc::c_int>) -> ();
+    pub fn pg_qsort(
+        base: *mut ::libc::c_void, nel: size_t, elsize: size_t,
+        cmp: ::std::option::Option<extern "C" fn(arg1: *const ::libc::c_void,
+                                                 arg2: *const ::libc::c_void)
+                                                  -> ::libc::c_int>
+    ) -> ();
     pub fn pg_qsort_strcmp(a: *const ::libc::c_void, b: *const ::libc::c_void)
      -> ::libc::c_int;
     pub fn qsort_arg(base: *mut ::libc::c_void, nel: size_t, elsize: size_t,
@@ -9854,29 +9847,25 @@ extern "C" {
      -> *mut ::libc::c_char;
     pub fn SendSharedInvalidMessages(msgs: *const SharedInvalidationMessage,
                                      n: ::libc::c_int) -> ();
-    pub fn ReceiveSharedInvalidMessages(invalFunction:
-                                            ::std::option::Option<extern "C" fn(msg:
-                                                                                    *mut SharedInvalidationMessage)
-                                                                      -> ()>,
-                                        resetFunction:
-                                            ::std::option::Option<extern "C" fn()
-                                                                      -> ()>)
-     -> ();
+    pub fn ReceiveSharedInvalidMessages(
+        invalFunction: ::std::option::Option<extern "C"
+                           fn(msg: *mut SharedInvalidationMessage) -> ()>,
+        resetFunction: ::std::option::Option<extern "C" fn() -> ()>
+    ) -> ();
     pub fn HandleCatchupInterrupt() -> ();
     pub fn EnableCatchupInterrupt() -> ();
     pub fn DisableCatchupInterrupt() -> _bool;
-    pub fn xactGetCommittedInvalidationMessages(msgs:
-                                                    *mut *mut SharedInvalidationMessage,
-                                                RelcacheInitFileInval:
-                                                    *mut _bool)
-     -> ::libc::c_int;
-    pub fn ProcessCommittedInvalidationMessages(msgs:
-                                                    *mut SharedInvalidationMessage,
-                                                nmsgs: ::libc::c_int,
-                                                RelcacheInitFileInval: _bool,
-                                                dbid: Oid, tsid: Oid) -> ();
-    pub fn LocalExecuteInvalidationMessage(msg:
-                                               *mut SharedInvalidationMessage)
+    pub fn xactGetCommittedInvalidationMessages(
+        msgs: *mut *mut SharedInvalidationMessage,
+        RelcacheInitFileInval: *mut _bool
+    ) -> ::libc::c_int;
+    pub fn ProcessCommittedInvalidationMessages(
+        msgs: *mut SharedInvalidationMessage,
+        nmsgs: ::libc::c_int,
+        RelcacheInitFileInval: _bool,
+        dbid: Oid, tsid: Oid
+    ) -> ();
+    pub fn LocalExecuteInvalidationMessage(msg: *mut SharedInvalidationMessage)
      -> ();
     pub fn RelationIncrementReferenceCount(rel: Relation) -> ();
     pub fn RelationDecrementReferenceCount(rel: Relation) -> ();
