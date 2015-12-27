@@ -9,9 +9,11 @@ pub mod libpq;
 
 /// Symbols Postgres needs to find.
 
+#[allow(non_snake_case)]
 #[no_mangle]
 pub unsafe extern fn _PG_init() { }
 
+#[allow(non_snake_case)]
 #[no_mangle]
 pub unsafe extern fn
     _PG_output_plugin_init(cb: *mut libpq::OutputPluginCallbacks) { init(cb); }
