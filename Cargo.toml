@@ -7,7 +7,7 @@ build = "build.rs"
 
 [lib]
 name = "elephantpump"
-crate-type = ["rlib", "staticlib"]
+crate-type = ["rlib", "dylib"]
 
 
 [dependencies]
