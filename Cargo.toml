@@ -12,3 +12,7 @@ crate-type = ["rlib", "dylib"]
 
 [dependencies]
 libc = "*"
+
+
+[build-dependencies]
+gcc = "*"
