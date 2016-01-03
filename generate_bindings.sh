@@ -9,7 +9,8 @@ echo '#include "replication/output_plugin.h"' >> /tmp/postgres.c
 echo '#include "replication/logical.h"' >> /tmp/postgres.c
 
 
-gcc -I /usr/include/postgresql/9.4/server -E /tmp/postgres.c > /tmp/libpq.c
+gcc -I /usr/include/postgresql/9.4/server -I /usr/local/include/server/ \
+    -E /tmp/postgres.c > /tmp/libpq.c
 
 cat /tmp/libpq.c | python src/remove_duplicate_single_line_statements.py  > /tmp/libpq_dedup.c
 
