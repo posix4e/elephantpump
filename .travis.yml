@@ -5,3 +5,4 @@ addons:
   apt:
     packages:
     - libpq-dev
+    - postgresql-server-dev-all
