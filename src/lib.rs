@@ -8,18 +8,6 @@ use std::ffi::CString;
 pub mod libpq;
 
 
-// Symbols Postgres needs to find.
-
-#[allow(non_snake_case)]
-#[no_mangle]
-pub unsafe extern fn _PG_init() { }
-
-#[allow(non_snake_case)]
-#[no_mangle]
-pub unsafe extern fn
-    _PG_output_plugin_init(cb: *mut libpq::OutputPluginCallbacks) { init(cb); }
-
-
 // Implementation of initialization and callbacks.
 
 pub unsafe extern fn init(cb: *mut libpq::OutputPluginCallbacks) {
@@ -53,11 +41,11 @@ pub type LogicalDecodeStartupCB =
 extern fn begin(ctx: *mut libpq::Struct_LogicalDecodingContext,
                 txn: *mut libpq::ReorderBufferTXN) {
     unsafe {
-        let last = 1;                                     // True in C language
+        let is_last = 1;                                  // True in C language
         let s = CString::new("BEGIN %u").unwrap();
-        libpq::OutputPluginPrepareWrite(ctx, last);
+        libpq::OutputPluginPrepareWrite(ctx, is_last);
         libpq::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid);
-        libpq::OutputPluginWrite(ctx, last);
+        libpq::OutputPluginWrite(ctx, is_last);
     }
 }
 /*
@@ -71,7 +59,12 @@ extern fn change(ctx: *mut libpq::Struct_LogicalDecodingContext,
                  txn: *mut libpq::ReorderBufferTXN,
                  relation: libpq::Relation,
                  change: *mut libpq::ReorderBufferChange) {
-
+    unsafe {
+        let last = 1;                                     // True in C language
+        libpq::OutputPluginPrepareWrite(ctx, last);
+        append_change(relation, change, (*ctx).out);
+        libpq::OutputPluginWrite(ctx, last);
+    }
 }
 /*
 pub type LogicalDecodeChangeCB =
@@ -103,7 +96,7 @@ pub type LogicalDecodeCommitCB =
  */
 
 extern fn shutdown(ctx: *mut libpq::Struct_LogicalDecodingContext) {
-
+  // Do nothing.
 }
 /*
 pub type LogicalDecodeShutdownCB =
@@ -112,3 +105,61 @@ pub type LogicalDecodeShutdownCB =
                               -> ()>;
 
  */
+
+
+unsafe fn append_change(relation: libpq::Relation,
+                        change: *mut libpq::ReorderBufferChange,
+                        out: libpq::StringInfo) {
+    unsafe {
+        let tuple_desc = (*relation).rd_att;
+        let tuples = (*change).data.tp();
+        let tuple_new = (*tuples).newtuple;
+        let tuple_old = (*tuples).oldtuple;
+        let token = match (*change).action {
+            libpq::REORDER_BUFFER_CHANGE_INSERT => "INSERT",
+            libpq::REORDER_BUFFER_CHANGE_UPDATE => "UPDATE",
+            libpq::REORDER_BUFFER_CHANGE_DELETE => "DELETE",
+            _ => panic!("Unrecognized change action!")
+        };
+        append("{ ", out);
+        append(" \"", out);
+        append(token, out);
+        append("\": ", out);
+        append_tuple_buf_as_json(tuple_new, tuple_desc, out);
+        if !tuple_old.is_null() {
+            append(", ", out);
+            append(" \"@\": ", out);
+            append_tuple_buf_as_json(tuple_old, tuple_desc, out);
+        }
+        append(" }\n", out);
+    }
+}
+
+unsafe fn append_tuple_buf_as_json(data: *mut libpq::ReorderBufferTupleBuf,
+                                   desc: libpq::TupleDesc,
+                                   out: libpq::StringInfo) {
+    if !data.is_null() {
+        let heap_tuple = &mut (*data).tuple;
+        let datum = libpq::heap_copy_tuple_as_datum(heap_tuple, desc);
+        let newlines = 0;                                // False in C language
+        libpq::composite_to_json(datum, out, newlines);
+    } else {
+        append("{}", out);
+    }
+}
+
+unsafe fn append<T: Into<Vec<u8>>>(t: T, out: libpq::StringInfo) {
+    libpq::appendStringInfoString(out, CString::new(t).unwrap().as_ptr());
+}
+
+
+// Symbols Postgres needs to find.
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern fn _PG_init() { }
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub unsafe extern fn
+    _PG_output_plugin_init(cb: *mut libpq::OutputPluginCallbacks) { init(cb); }
