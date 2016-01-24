@@ -1,5 +1,11 @@
+os:
+  - linux
+  - osx
+rust:
+  - beta
 language: rust
-# before_install: env PATH=$PATH:/home/travis/.cargo/bin ./generate_bindings.sh
+before_install: brew update || true ; brew upgrade postgresql || true || brew install postgresql
+script:  make
 addons:
   postgresql: "9.4"
   apt:
