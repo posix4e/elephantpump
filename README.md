@@ -1,4 +1,4 @@
-# elephantpump
+# rpg
 
 A rust program which takes a logical decoding stream from postgresql and 
 outputs it in a pluggable and safe way. Not to be confused with
