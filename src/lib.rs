@@ -110,29 +110,27 @@ pub type LogicalDecodeShutdownCB =
 unsafe fn append_change(relation: libpq::Relation,
                         change: *mut libpq::ReorderBufferChange,
                         out: libpq::StringInfo) {
-    unsafe {
-        let tuple_desc = (*relation).rd_att;
-        let tuples = (*change).data.tp();
-        let tuple_new = (*tuples).newtuple;
-        let tuple_old = (*tuples).oldtuple;
-        let token = match (*change).action {
-            libpq::REORDER_BUFFER_CHANGE_INSERT => "INSERT",
-            libpq::REORDER_BUFFER_CHANGE_UPDATE => "UPDATE",
-            libpq::REORDER_BUFFER_CHANGE_DELETE => "DELETE",
-            _ => panic!("Unrecognized change action!")
-        };
-        append("{ ", out);
-        append(" \"", out);
-        append(token, out);
-        append("\": ", out);
-        append_tuple_buf_as_json(tuple_new, tuple_desc, out);
-        if !tuple_old.is_null() {
-            append(", ", out);
-            append(" \"@\": ", out);
-            append_tuple_buf_as_json(tuple_old, tuple_desc, out);
-        }
-        append(" }\n", out);
+    let tuple_desc = (*relation).rd_att;
+    let tuples = (*change).data.tp();
+    let tuple_new = (*tuples).newtuple;
+    let tuple_old = (*tuples).oldtuple;
+    let token = match (*change).action {
+        libpq::REORDER_BUFFER_CHANGE_INSERT => "INSERT",
+        libpq::REORDER_BUFFER_CHANGE_UPDATE => "UPDATE",
+        libpq::REORDER_BUFFER_CHANGE_DELETE => "DELETE",
+        _ => panic!("Unrecognized change action!")
+    };
+    append("{ ", out);
+    append(" \"", out);
+    append(token, out);
+    append("\": ", out);
+    append_tuple_buf_as_json(tuple_new, tuple_desc, out);
+    if !tuple_old.is_null() {
+        append(", ", out);
+        append(" \"@\": ", out);
+        append_tuple_buf_as_json(tuple_old, tuple_desc, out);
     }
+    append(" }\n", out);
 }
 
 unsafe fn append_tuple_buf_as_json(data: *mut libpq::ReorderBufferTupleBuf,
@@ -141,8 +139,13 @@ unsafe fn append_tuple_buf_as_json(data: *mut libpq::ReorderBufferTupleBuf,
     if !data.is_null() {
         let heap_tuple = &mut (*data).tuple;
         let datum = libpq::heap_copy_tuple_as_datum(heap_tuple, desc);
-        let newlines = 0;                                // False in C language
-        libpq::composite_to_json(datum, out, newlines);
+        let empty_oid: libpq::Oid = 0;
+        let json = libpq::DirectFunctionCall1Coll(libpq::row_to_json,
+                                                  empty_oid,
+                                                  datum);
+        let json_output_function: libpq::Oid = 322;
+        let text = libpq::OidOutputFunctionCall(json_output_function, json);
+        libpq::appendStringInfoString(out, text);
     } else {
         append("{}", out);
     }
