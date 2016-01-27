@@ -42,7 +42,7 @@ extern fn begin(ctx: *mut libpq::Struct_LogicalDecodingContext,
                 txn: *mut libpq::ReorderBufferTXN) {
     unsafe {
         let is_last = 1;                                  // True in C language
-        let s = CString::new("BEGIN %u").unwrap();
+        let s = CString::new("{ \"BEGIN\": %u }").unwrap();
         libpq::OutputPluginPrepareWrite(ctx, is_last);
         libpq::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid);
         libpq::OutputPluginWrite(ctx, is_last);
@@ -81,7 +81,7 @@ extern fn commit(ctx: *mut libpq::Struct_LogicalDecodingContext,
                  lsn: libpq::XLogRecPtr) {
     unsafe {
         let last = 1;                                     // True in C language
-        let s = CString::new("COMMIT %u").unwrap();
+        let s = CString::new("{ \"COMMIT\": %u }").unwrap();
         libpq::OutputPluginPrepareWrite(ctx, last);
         libpq::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid);
         libpq::OutputPluginWrite(ctx, last);
@@ -121,7 +121,7 @@ unsafe fn append_change(relation: libpq::Relation,
         _ => panic!("Unrecognized change action!")
     };
     append("{ ", out);
-    append(" \"", out);
+    append("\"", out);
     append(token, out);
     append("\": ", out);
     append_tuple_buf_as_json(tuple_new, tuple_desc, out);
@@ -140,10 +140,10 @@ unsafe fn append_tuple_buf_as_json(data: *mut libpq::ReorderBufferTupleBuf,
         let heap_tuple = &mut (*data).tuple;
         let datum = libpq::heap_copy_tuple_as_datum(heap_tuple, desc);
         let empty_oid: libpq::Oid = 0;
-        let json = libpq::DirectFunctionCall1Coll(libpq::row_to_json,
+        let json = libpq::DirectFunctionCall1Coll(Some(row_to_json),
                                                   empty_oid,
                                                   datum);
-        let json_output_function: libpq::Oid = 322;
+        let json_output_function: libpq::Oid = 322;     // TODO: Dynamic lookup
         let text = libpq::OidOutputFunctionCall(json_output_function, json);
         libpq::appendStringInfoString(out, text);
     } else {
@@ -153,6 +153,13 @@ unsafe fn append_tuple_buf_as_json(data: *mut libpq::ReorderBufferTupleBuf,
 
 unsafe fn append<T: Into<Vec<u8>>>(t: T, out: libpq::StringInfo) {
     libpq::appendStringInfoString(out, CString::new(t).unwrap().as_ptr());
+}
+
+extern fn row_to_json(fcinfo: libpq::FunctionCallInfo) -> libpq::Datum {
+    // We wrap the unsafe call to make it safe.
+    unsafe {
+        libpq::row_to_json(fcinfo)
+    }
 }
 
 
