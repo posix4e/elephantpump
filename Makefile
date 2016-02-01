@@ -28,7 +28,10 @@ ifeq ($(shell uname -s),Darwin)
 LINK_FLAGS   = -C link-args='-Wl,-undefined,dynamic_lookup'
 endif
 
-jsoncdc.so:
+generate:
+	bash generate_bindings.sh 
+
+jsoncdc.so: generate
 	cargo rustc --release -- $(LINK_FLAGS)
 	cp target/release/libjsoncdc.* $@
 
@@ -40,5 +43,9 @@ PGXS := $(shell $(PG_CONFIG) --pgxs)
 include $(PGXS)
 
 clean: cargoclean
+	rm -f jsoncdc.so
 
-all: jsoncdc.so
+all: generate jsoncdc.so
+
+test: all 
+	bash run_tests.sh

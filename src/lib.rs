@@ -19,7 +19,9 @@ pub unsafe extern fn _PG_init() { }
 pub unsafe extern fn
     _PG_output_plugin_init(cb: *mut libpq::OutputPluginCallbacks) { init(cb); }
 
-
+extern "C" {
+    pub fn row_to_json(fcinfo: libpq::FunctionCallInfo) -> libpq::Datum;
+}
 // Implementation of initialization and callbacks.
 
 pub unsafe extern fn init(cb: *mut libpq::OutputPluginCallbacks) {
@@ -35,11 +37,11 @@ pub type LogicalOutputPluginInit =
                               -> ()>;
 */
 
-extern fn startup(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn startup(ctx: *mut libpq::Struct_LogicalDecodingContext,
                   options: *mut libpq::OutputPluginOptions,
                   is_init: libpq::_bool) {
     unsafe {
-        (*options).output_type = libpq::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
+        (*options).output_type = libpq::Enum_OutputPluginOutputType::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
     }
 }
 /*
@@ -50,7 +52,7 @@ pub type LogicalDecodeStartupCB =
                                         is_init: _bool) -> ()>;
  */
 
-extern fn begin(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn begin(ctx: *mut libpq::Struct_LogicalDecodingContext,
                 txn: *mut libpq::ReorderBufferTXN) {
     unsafe {
         let last = 1;                                     // True in C language
@@ -67,7 +69,7 @@ pub type LogicalDecodeBeginCB =
                                         txn: *mut ReorderBufferTXN) -> ()>;
  */
 
-extern fn change(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn change(ctx: *mut libpq::Struct_LogicalDecodingContext,
                  txn: *mut libpq::ReorderBufferTXN,
                  relation: libpq::Relation,
                  change: *mut libpq::ReorderBufferChange) {
@@ -83,7 +85,7 @@ pub type LogicalDecodeChangeCB =
                               -> ()>;
  */
 
-extern fn commit(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn commit(ctx: *mut libpq::Struct_LogicalDecodingContext,
                  txn: *mut libpq::ReorderBufferTXN,
                  lsn: libpq::XLogRecPtr) {
     unsafe {
@@ -102,7 +104,7 @@ pub type LogicalDecodeCommitCB =
                                         commit_lsn: XLogRecPtr) -> ()>;
  */
 
-extern fn shutdown(ctx: *mut libpq::Struct_LogicalDecodingContext) {
+unsafe extern fn shutdown(ctx: *mut libpq::Struct_LogicalDecodingContext) {
 
 }
 /*
