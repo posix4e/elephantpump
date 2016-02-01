@@ -1,12 +1,21 @@
 language: rust
-# before_install: env PATH=$PATH:/home/travis/.cargo/bin ./generate_bindings.sh
+sudo: required
+os:
+  - linux
+  - osx
+rust:
+  - beta
+
 addons:
-  postgresql: "9.4"
   apt:
     packages:
-    - libpq-dev
-    - postgresql-server-dev-all
-    - libclang1-3.4
-    - libclang-3.4-dev
-    - libclang-common-3.4-dev
-    - clang-3.4
+      - libpq-dev
+      - postgresql-server-dev-all
+      - libclang1-3.4
+      - libclang-3.4-dev
+      - libclang-common-3.4-dev
+      - clang-3.4
+  postgresql: "9.4"
+
+before_install: ci_tools/prepare_${TRAVIS_OS_NAME}.sh
+script: test/run_tests.sh
