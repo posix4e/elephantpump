@@ -7,7 +7,9 @@ use std::ffi::CString;
         non_upper_case_globals)]
 pub mod libpq;
 
-
+extern "C" {
+    pub fn row_to_json(fcinfo: libpq::FunctionCallInfo) -> libpq::Datum;
+}
 // Implementation of initialization and callbacks.
 
 pub unsafe extern fn init(cb: *mut libpq::OutputPluginCallbacks) {
@@ -23,11 +25,11 @@ pub type LogicalOutputPluginInit =
                               -> ()>;
 */
 
-extern fn startup(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn startup(ctx: *mut libpq::Struct_LogicalDecodingContext,
                   options: *mut libpq::OutputPluginOptions,
                   is_init: libpq::_bool) {
     unsafe {
-        (*options).output_type = libpq::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
+        (*options).output_type = libpq::Enum_OutputPluginOutputType::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
     }
 }
 /*
@@ -38,7 +40,7 @@ pub type LogicalDecodeStartupCB =
                                         is_init: _bool) -> ()>;
  */
 
-extern fn begin(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn begin(ctx: *mut libpq::Struct_LogicalDecodingContext,
                 txn: *mut libpq::ReorderBufferTXN) {
     unsafe {
         let is_last = 1;                                  // True in C language
@@ -55,7 +57,7 @@ pub type LogicalDecodeBeginCB =
                                         txn: *mut ReorderBufferTXN) -> ()>;
  */
 
-extern fn change(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn change(ctx: *mut libpq::Struct_LogicalDecodingContext,
                  txn: *mut libpq::ReorderBufferTXN,
                  relation: libpq::Relation,
                  change: *mut libpq::ReorderBufferChange) {
@@ -76,7 +78,7 @@ pub type LogicalDecodeChangeCB =
                               -> ()>;
  */
 
-extern fn commit(ctx: *mut libpq::Struct_LogicalDecodingContext,
+unsafe extern fn commit(ctx: *mut libpq::Struct_LogicalDecodingContext,
                  txn: *mut libpq::ReorderBufferTXN,
                  lsn: libpq::XLogRecPtr) {
     unsafe {
@@ -95,7 +97,7 @@ pub type LogicalDecodeCommitCB =
                                         commit_lsn: XLogRecPtr) -> ()>;
  */
 
-extern fn shutdown(ctx: *mut libpq::Struct_LogicalDecodingContext) {
+unsafe extern fn shutdown(ctx: *mut libpq::Struct_LogicalDecodingContext) {
   // Do nothing.
 }
 /*
@@ -115,9 +117,9 @@ unsafe fn append_change(relation: libpq::Relation,
     let tuple_new = (*tuples).newtuple;
     let tuple_old = (*tuples).oldtuple;
     let token = match (*change).action {
-        libpq::REORDER_BUFFER_CHANGE_INSERT => "INSERT",
-        libpq::REORDER_BUFFER_CHANGE_UPDATE => "UPDATE",
-        libpq::REORDER_BUFFER_CHANGE_DELETE => "DELETE",
+        libpq::Enum_ReorderBufferChangeType::REORDER_BUFFER_CHANGE_INSERT => "INSERT",
+        libpq::Enum_ReorderBufferChangeType::REORDER_BUFFER_CHANGE_UPDATE => "UPDATE",
+        libpq::Enum_ReorderBufferChangeType::REORDER_BUFFER_CHANGE_DELETE => "DELETE",
         _ => panic!("Unrecognized change action!")
     };
     append("{ ", out);
@@ -140,7 +142,7 @@ unsafe fn append_tuple_buf_as_json(data: *mut libpq::ReorderBufferTupleBuf,
         let heap_tuple = &mut (*data).tuple;
         let datum = libpq::heap_copy_tuple_as_datum(heap_tuple, desc);
         let empty_oid: libpq::Oid = 0;
-        let json = libpq::DirectFunctionCall1Coll(Some(row_to_json),
+        let json = libpq::DirectFunctionCall1Coll(Some(row_to_json_helper),
                                                   empty_oid,
                                                   datum);
         let json_output_function: libpq::Oid = 322;     // TODO: Dynamic lookup
@@ -155,10 +157,10 @@ unsafe fn append<T: Into<Vec<u8>>>(t: T, out: libpq::StringInfo) {
     libpq::appendStringInfoString(out, CString::new(t).unwrap().as_ptr());
 }
 
-extern fn row_to_json(fcinfo: libpq::FunctionCallInfo) -> libpq::Datum {
+extern fn row_to_json_helper(fcinfo: libpq::FunctionCallInfo) -> libpq::Datum {
     // We wrap the unsafe call to make it safe.
     unsafe {
-        libpq::row_to_json(fcinfo)
+        row_to_json(fcinfo)
     }
 }
 
