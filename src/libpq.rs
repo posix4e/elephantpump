@@ -8666,6 +8666,9 @@ extern "C" {
     pub static mut PortalContext: MemoryContext;
 }
 extern "C" {
+    pub fn row_to_json(fcinfo: FunctionCallInfo) -> Datum;
+}
+extern "C" {
     pub fn ffsl(arg1: ::libc::c_long) -> ::libc::c_int;
     pub fn ffsll(arg1: ::libc::c_longlong) -> ::libc::c_int;
     pub fn fls(arg1: ::libc::c_int) -> ::libc::c_int;
