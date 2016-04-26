@@ -38,7 +38,7 @@ function linux {
   HBA_CONF="$PG_DIR"/pg_hba.conf
   CONF="$PG_DIR"/postgresql.conf
 
-  sudo -E env PATH="$PATH" LD_LIBRARY_PATH="$LD_LIBRARY_PATH" make install
+  sudo -E env PATH="$PATH" LD_LIBRARY_PATH="$LD_LIBRARY_PATH" (cd jsoncdc; make install)
   sudo pg_ctlcluster "$VERSION" main stop
 
   msg "Setting $HBA_CONF settings..."
@@ -66,7 +66,7 @@ function osx {
   brew remove postgresql >> "$BREW_LOG"
   brew upgrade >> "$BREW_LOG"
 
-  make clean all install
+  (cd jsoncdc; make clean all install)
 
   msg "Setting $HBA_CONF settings..."
   hba >> "$HBA_CONF"

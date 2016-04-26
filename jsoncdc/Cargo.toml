@@ -10,9 +10,9 @@ build = "build.rs"
 name = "jsoncdc"
 crate-type = ["dylib"]
 
-
 [dependencies]
 libc = "*"
+pgrustxn = {version = "*", path= "../pgrustxn"}
 
 [dev-dependencies]
 rustfmt = "*"

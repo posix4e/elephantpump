@@ -1,0 +1,19 @@
+[package]
+name = "pgrustxn"  #til i get a better name
+license = "Apache-2.0"
+version = "0.0.7"
+authors = ["Alex Newman <posi@planet.com>"] #TODO get jason to add his name :)
+description   = "Lightweight non-blocking IO"
+documentation = "http://rustdoc.s3-website-us-east-1.amazonaws.com/jsoncdc/v0.0.7/jsoncdc/"
+homepage      = "https://github.com/posix4e/jsoncdc"
+repository    = "https://github.com/posix4e/jsoncdc"
+readme        = "README.md"
+keywords      = ["postgres"]
+exclude       = [
+  ".gitignore",
+  ".travis.yml",
+  "deploy.sh",
+  "test/**/*",
+]
+[dev-dependencies]
+rustfmt = "0.4"
