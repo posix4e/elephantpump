@@ -1,0 +1,15 @@
+#!/bin/bash
+set -o errexit -o nounset -o pipefail
+
+export PATH=/usr/local/bin:"$PATH"
+
+pkgs=(ca-certificates curl git make gcc
+      postgresql-server-dev-"$PG_MAJOR"="$PG_VERSION"
+      python-pip)
+
+rm -rf /var/lib/apt/lists/*
+
+apt-get update
+apt-get install -y --no-install-recommends "${pkgs[@]}"
+
+pip install pgxnclient
