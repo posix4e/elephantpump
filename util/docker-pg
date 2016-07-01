@@ -7,9 +7,8 @@ pkgs=(ca-certificates curl git make gcc
       postgresql-server-dev-"$PG_MAJOR"="$PG_VERSION"
       python-pip)
 
-rm -rf /var/lib/apt/lists/*
-
 apt-get update
 apt-get install -y --no-install-recommends "${pkgs[@]}"
+rm -rf /var/lib/apt/lists/*
 
 pip install pgxnclient
