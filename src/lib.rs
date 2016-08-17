@@ -90,6 +90,19 @@ impl PGAppend<*mut i8> for pg::StringInfo {
     }
 }
 
+impl PGAppend<pg::Datum> for pg::StringInfo {
+    unsafe fn add_str(self, datum: pg::Datum) {
+        self.add_json(datum);
+    }
+    unsafe fn add_json(self, datum: pg::Datum) {
+        let empty_oid: pg::Oid = 0;
+        let json =
+            pg::DirectFunctionCall1Coll(Some(row_to_json), empty_oid, datum);
+        let ptr = json as *const pg::Struct_varlena;
+        pg::appendStringInfoString(self, pg::text_to_cstring(ptr));
+    }
+}
+
 unsafe fn append_change(relation: pg::Relation,
                         change: *mut pg::ReorderBufferChange,
                         out: pg::StringInfo) {
@@ -128,13 +141,39 @@ unsafe fn append_tuple_buf_as_json(data: *mut pg::ReorderBufferTupleBuf,
                                    out: pg::StringInfo) {
     if !data.is_null() {
         let heap_tuple = &mut (*data).tuple;
-        let datum = pg::heap_copy_tuple_as_datum(heap_tuple, desc);
-        let empty_oid: pg::Oid = 0;
-        let json =
-            pg::DirectFunctionCall1Coll(Some(row_to_json), empty_oid, datum);
-        let ptr = json as *const pg::Struct_varlena;
-        let text = pg::text_to_cstring(ptr);
-        pg::appendStringInfoString(out, text);
+        let n = (*desc).natts as usize;
+        let attrs = (*desc).attrs;
+
+        let mut datums: Vec<pg::Datum> = Vec::new();
+        datums.resize(n, 0);
+        let mut nulls: Vec<pg::_bool> = Vec::new();
+        nulls.resize(n, CFALSE);
+        pg::heap_deform_tuple(heap_tuple,
+                              desc,
+                              datums.as_mut_ptr(),
+                              nulls.as_mut_ptr());
+
+        let mut keep: Vec<(pg::NameData, pg::Datum)> = Vec::with_capacity(n);
+        let mut skip: Vec<pg::NameData> = Vec::with_capacity(n);
+
+        for i in 0..n {
+            let datum: pg::Datum = datums[i];
+            let name = (**attrs.offset(i as isize)).attname;
+            if !is_stale_toast(datum) {
+                skip.push(name);
+            } else {
+                keep.push((name, datum));
+            }
+        }
+
+        for (name, datum) in keep {
+            let mut text = name.data;
+            out.add_json(text.as_mut_ptr());
+            out.add_str(": ");
+            out.add_json(datum);
+        }
+
+        // TODO: Append unchanged ones.
     } else {
         out.add_str("{}");
     }
@@ -183,6 +222,11 @@ extern "C" fn row_to_json(fcinfo: pg::FunctionCallInfo) -> pg::Datum {
     // a function pointer to DirectFunctionCall1Coll(). This is a spurious
     // artifact of the generated binding.
     unsafe { pg::row_to_json(fcinfo) }
+}
+
+
+fn is_stale_toast(datum: pg::Datum) -> bool {
+    false
 }
 
 
