@@ -142,6 +142,7 @@ unsafe fn append_tuple_buf_as_json(data: *mut pg::ReorderBufferTupleBuf,
     if !data.is_null() {
         let heap_tuple = &mut (*data).tuple;
         let n = (*desc).natts as usize;
+        let attrs = (*desc).attrs;
 
         let mut datums: Vec<pg::Datum> = Vec::new();
         datums.resize(n, 0);
@@ -152,11 +153,24 @@ unsafe fn append_tuple_buf_as_json(data: *mut pg::ReorderBufferTupleBuf,
                               datums.as_mut_ptr(),
                               nulls.as_mut_ptr());
 
+        let mut keep: Vec<(pg::NameData, pg::Datum)> = Vec::with_capacity(n);
+        let mut skip: Vec<pg::NameData> = Vec::with_capacity(n);
+
         for i in 0..n {
             let datum: pg::Datum = datums[i];
-            if !is_toast(datum) {
-                continue;
-            }
+            let name = (**attrs.offset(n as isize)).attname;
+            // ***Uncomment to unlock segfaults.***
+            // if !is_stale_toast(datum) {
+            //     skip.push(name);
+            // } else {
+            //     keep.push((name, datum));
+            // }
+        }
+
+        for (name, datum) in keep {
+            let mut text = name.data;
+            out.add_json(text.as_mut_ptr());
+            out.add_str(": ");
             out.add_json(datum);
         }
 
@@ -212,7 +226,7 @@ extern "C" fn row_to_json(fcinfo: pg::FunctionCallInfo) -> pg::Datum {
 }
 
 
-fn is_toast(datum: pg::Datum) -> bool {
+fn is_stale_toast(datum: pg::Datum) -> bool {
     false
 }
 
