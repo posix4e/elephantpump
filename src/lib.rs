@@ -158,13 +158,12 @@ unsafe fn append_tuple_buf_as_json(data: *mut pg::ReorderBufferTupleBuf,
 
         for i in 0..n {
             let datum: pg::Datum = datums[i];
-            let name = (**attrs.offset(n as isize)).attname;
-            // ***Uncomment to unlock segfaults.***
-            // if !is_stale_toast(datum) {
-            //     skip.push(name);
-            // } else {
-            //     keep.push((name, datum));
-            // }
+            let name = (**attrs.offset(i as isize)).attname;
+            if !is_stale_toast(datum) {
+                skip.push(name);
+            } else {
+                keep.push((name, datum));
+            }
         }
 
         for (name, datum) in keep {
