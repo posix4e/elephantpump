@@ -1,0 +1,9 @@
+#!/bin/bash
+set -o errexit -o nounset -o pipefail
+
+curl -sf https://static.rust-lang.org/rustup.sh -o /tmp/rustup.sh
+chmod a+rx /tmp/rustup.sh
+
+/tmp/rustup.sh --disable-sudo -y --verbose
+
+cargo install rustfmt

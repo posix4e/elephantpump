@@ -4,15 +4,12 @@ ENV PATH ~/.cargo/bin/:$PATH
 ENV CARGO_HOME /cargo
 ENV SRC_PATH /src
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    ca-certificates curl git make gcc postgresql-server-dev-$PG_MAJOR=$PG_VERSION python-pip \
-  && rm -rf /var/lib/apt/lists/* \
-  && curl -sf https://static.rust-lang.org/rustup.sh -o rustup.sh \
-  && bash rustup.sh --disable-sudo -y --verbose \
-  && pip install pgxnclient \
-  && cargo install rustfmt \
-  && mkdir -p "$CARGO_HOME"
+COPY util/docker-pg /tmp/docker-pg
+RUN /tmp/docker-pg
+
+COPY util/docker-rust /tmp/docker-rust
+RUN mkdir -p $CARGO_HOME
+RUN /tmp/docker-rust
 
 WORKDIR $SRC_PATH
 
