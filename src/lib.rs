@@ -1,4 +1,5 @@
 extern crate libc;
+use std::fmt;
 use std::ffi::{CStr, CString};
 use std::mem::size_of;
 
@@ -98,6 +99,26 @@ impl PGAppend<*mut i8> for pg::StringInfo {
     }
 }
 
+struct Wrapped(pg::Enum_ReorderBufferChangeType);
+
+impl fmt::Display for Wrapped {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use pg::Enum_ReorderBufferChangeType::*;
+        let formatted_token = match self.0 {
+            REORDER_BUFFER_CHANGE_INSERT => "insert",
+            REORDER_BUFFER_CHANGE_UPDATE => "update",
+            REORDER_BUFFER_CHANGE_DELETE => "delete",
+            REORDER_BUFFER_CHANGE_INTERNAL_SNAPSHOT => "int_snapshot",
+            REORDER_BUFFER_CHANGE_INTERNAL_COMMAND_ID => "int_command_id",
+            REORDER_BUFFER_CHANGE_INTERNAL_TUPLECID => "int_tuplecid",
+            REORDER_BUFFER_CHANGE_INTERNAL_SPEC_INSERT => "int_spec_insert",
+            REORDER_BUFFER_CHANGE_INTERNAL_SPEC_CONFIRM => "int_spec_confirm",
+            REORDER_BUFFER_CHANGE_MESSAGE => "change_message",
+        };
+        write!(f, "{}", formatted_token)
+    }
+}
+
 unsafe fn append_change(relation: pg::Relation,
                         change: *mut pg::ReorderBufferChange,
                         out: pg::StringInfo) {
@@ -114,8 +135,14 @@ unsafe fn append_change(relation: pg::Relation,
         REORDER_BUFFER_CHANGE_INSERT => "insert",
         REORDER_BUFFER_CHANGE_UPDATE => "update",
         REORDER_BUFFER_CHANGE_DELETE => "delete",
-        _ => panic!("Unrecognized change action!"),
+        _ => "unrecognized",
     };
+    if token == "unrecognized" {
+        log!(format!("Unrecognized Change Action: [ {} ]",
+                     Wrapped((*change).action))
+            .as_str());
+        return;
+    }
     out.add_str("{ ");
     out.add_json(token);
     out.add_str(": ");
