@@ -1,6 +1,6 @@
 extern crate libc;
-use std::fmt;
 use std::ffi::{CStr, CString};
+use std::fmt;
 use std::mem::size_of;
 
 extern crate rpgffi as pg;
@@ -45,8 +45,8 @@ unsafe extern "C" fn change(ctx: *mut pg::Struct_LogicalDecodingContext,
                             relation: pg::Relation,
                             change: *mut pg::ReorderBufferChange) {
     let relid = (*relation).rd_id;
-    let last_relid: *mut pg::Oid =
-        (*ctx).output_plugin_private as *mut pg::Oid;
+    let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as
+                                   *mut pg::Oid;
     if *last_relid != relid {
         pg::OutputPluginPrepareWrite(ctx, CFALSE);
         append_schema(relation, (*ctx).out);
@@ -66,8 +66,8 @@ unsafe extern "C" fn commit(ctx: *mut pg::Struct_LogicalDecodingContext,
     pg::OutputPluginPrepareWrite(ctx, CTRUE);
     pg::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid, t);
     pg::OutputPluginWrite(ctx, CTRUE);
-    let last_relid: *mut pg::Oid =
-        (*ctx).output_plugin_private as *mut pg::Oid;
+    let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as
+                                   *mut pg::Oid;
     *last_relid = 0;
 }
 
@@ -94,9 +94,7 @@ impl PGAppend<*mut i8> for pg::StringInfo {
     unsafe fn add_str(self, t: *mut i8) {
         pg::appendStringInfoString(self, t);
     }
-    unsafe fn add_json(self, t: *mut i8) {
-        pg::escape_json(self, t);
-    }
+    unsafe fn add_json(self, t: *mut i8) { pg::escape_json(self, t); }
 }
 
 struct Wrapped(pg::Enum_ReorderBufferChangeType);
@@ -104,16 +102,18 @@ struct Wrapped(pg::Enum_ReorderBufferChangeType);
 impl fmt::Display for Wrapped {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use pg::Enum_ReorderBufferChangeType::*;
+        #[allow(unreachable_patterns)]
         let formatted_token = match self.0 {
             REORDER_BUFFER_CHANGE_INSERT => "insert",
             REORDER_BUFFER_CHANGE_UPDATE => "update",
             REORDER_BUFFER_CHANGE_DELETE => "delete",
-            REORDER_BUFFER_CHANGE_INTERNAL_SNAPSHOT => "int_snapshot",
-            REORDER_BUFFER_CHANGE_INTERNAL_COMMAND_ID => "int_command_id",
-            REORDER_BUFFER_CHANGE_INTERNAL_TUPLECID => "int_tuplecid",
-            REORDER_BUFFER_CHANGE_INTERNAL_SPEC_INSERT => "int_spec_insert",
-            REORDER_BUFFER_CHANGE_INTERNAL_SPEC_CONFIRM => "int_spec_confirm",
-            REORDER_BUFFER_CHANGE_MESSAGE => "change_message",
+            REORDER_BUFFER_CHANGE_INTERNAL_SNAPSHOT => "internal_snapshot",
+            REORDER_BUFFER_CHANGE_INTERNAL_COMMAND_ID => "internal_command_id",
+            REORDER_BUFFER_CHANGE_INTERNAL_TUPLECID => "internal_tuplecid",
+            #[cfg_attr(rustfmt, rustfmt_skip)]
+            REORDER_BUFFER_CHANGE_INTERNAL_SPEC_INSERT =>
+                "internal_spec_insert",
+            _ => "unknown_change_type",   // NB: Unreachable after Postgres 9.4
         };
         write!(f, "{}", formatted_token)
     }
@@ -140,7 +140,7 @@ unsafe fn append_change(relation: pg::Relation,
     if token == "unrecognized" {
         log!(format!("Unrecognized Change Action: [ {} ]",
                      Wrapped((*change).action))
-            .as_str());
+                 .as_str());
         return;
     }
     out.add_str("{ ");
@@ -298,7 +298,7 @@ unsafe fn is_stale_toast(datum: pg::Datum,
                          attr: pg::Form_pg_attribute)
                          -> bool {
     use pg::Enum_vartag_external::VARTAG_ONDISK;
-    let mut o: pg::Oid = 0;                        // Output function; not used
+    let mut o: pg::Oid = 0; // Output function; not used
     let mut is_variable_length: pg::_bool = CFALSE;
     pg::getTypeOutputInfo((*attr).atttypid, &mut o, &mut is_variable_length);
     if is_variable_length == CTRUE {
@@ -322,7 +322,7 @@ pub unsafe extern "C" fn _PG_init() {}
 #[allow(non_snake_case)]
 #[no_mangle]
 pub unsafe extern fn
-    _PG_output_plugin_init(cb: *mut pg::OutputPluginCallbacks) {
+_PG_output_plugin_init(cb: *mut pg::OutputPluginCallbacks){
     init(cb);
 }
 
@@ -333,7 +333,7 @@ const CTRUE: pg::_bool = 1;
 const CFALSE: pg::_bool = 0;
 
 pub unsafe fn elog(file: &str, line: u32, function: &str, msg: &str) {
-    let level = 15;         // The LOG level of logging is normally server-only
+    let level = 15; // The LOG level of logging is normally server-only
     pg::elog_start(CString::new(file).unwrap().as_ptr(),
                    line as ::std::os::raw::c_int,
                    CString::new(function).unwrap().as_ptr());
