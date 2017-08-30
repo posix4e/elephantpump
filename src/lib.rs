@@ -21,6 +21,7 @@ pub unsafe extern "C" fn init(cb: *mut pg::OutputPluginCallbacks) {
     (*cb).change_cb = Some(change);
     (*cb).commit_cb = Some(commit);
     (*cb).shutdown_cb = Some(shutdown);
+    (*cb).message_cb = Some(message);
 }
 
 unsafe extern "C" fn startup(ctx: *mut pg::Struct_LogicalDecodingContext,
@@ -75,6 +76,19 @@ unsafe extern "C" fn shutdown(ctx: *mut pg::Struct_LogicalDecodingContext) {
     pg::pfree((*ctx).output_plugin_private);
 }
 
+#[allow(unused_variables)]
+unsafe extern "C" fn message(ctx: *mut pg::Struct_LogicalDecodingContext,
+                             txn: *mut pg::ReorderBufferTXN,
+                             lsn: pg::XLogRecPtr,
+                             transactional: pg::_bool,
+                             prefix: *const std::os::raw::c_char,
+                             message_size: pg::Size,
+                             message: *const std::os::raw::c_char
+) {
+    pg::OutputPluginPrepareWrite(ctx, CTRUE);
+    append_message(transactional, prefix, message, (*ctx).out);
+    pg::OutputPluginWrite(ctx, CTRUE);
+}
 
 trait PGAppend<T> {
     unsafe fn add_str(self, T);
@@ -95,6 +109,13 @@ impl PGAppend<*mut i8> for pg::StringInfo {
         pg::appendStringInfoString(self, t);
     }
     unsafe fn add_json(self, t: *mut i8) { pg::escape_json(self, t); }
+}
+
+impl PGAppend<*const i8> for pg::StringInfo {
+    unsafe fn add_str(self, t: *const i8) {
+        pg::appendStringInfoString(self, t);
+    }
+    unsafe fn add_json(self, t: *const i8) { pg::escape_json(self, t); }
 }
 
 struct Wrapped(pg::Enum_ReorderBufferChangeType);
@@ -267,6 +288,37 @@ unsafe fn append_schema(relation: pg::Relation, out: pg::StringInfo) {
     out.add_json("table");
     out.add_str(": ");
     out.add_json(qualified_name);
+    out.add_str(" }");
+}
+
+unsafe fn append_message(transactional: pg::_bool,
+                         prefix: *const std::os::raw::c_char,
+                         message: *const std::os::raw::c_char,
+                         out: pg::StringInfo) {
+
+    // { "message": %s, 
+    out.add_str("{ ");
+    out.add_json("message");
+    out.add_str(": ");
+    out.add_json(message);
+    out.add_str(", ");
+
+    // "prefix": %s, 
+    out.add_json("prefix");
+    out.add_str(": ");
+    out.add_json(prefix);
+    out.add_str(", ");
+
+    // "transactional": %s }
+    out.add_json("transactional");
+    out.add_str(": ");
+    
+    if transactional == CTRUE {
+        out.add_str("true");
+    } else {
+        out.add_str("false");
+    }
+
     out.add_str(" }");
 }
 

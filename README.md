@@ -45,13 +45,15 @@ A basic demo:
     SELECT * FROM pg_logical_slot_get_changes('jsoncdc', NULL, NULL);
 
 The output format of `jsoncdc` is very regular, consisting of `begin`,
-`table`, `insert`, `update` and `delete` clauses as JSON objects, one per line:
+`table`, `insert`, `update`, `delete` and [`message`](https://www.postgresql.org/message-id/flat/56D36A2C.3070807%402ndquadrant.com#56D36A2C.3070807@2ndquadrant.com) clauses as JSON objects, one per line:
 
     { "begin": <xid> }
     { "schema": <column names and type>, "table": <name of table> }
     ...inserts, updates and deletes for this table...
     { "schema": <column names and type>, "table": <name of next table> }
     ...inserts, updates and deletes for next table...
+    { "message": <message>, "prefix": <prefix>, "transactional": <true|false> }
+    ... sent using pg_emit_logical
     { "commit": <xid>, "t": <timestamp with timezone> }
 
 With `pg_recvlogical` and a little shell, you can leverage this very regular
