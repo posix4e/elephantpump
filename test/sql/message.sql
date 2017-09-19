@@ -23,6 +23,8 @@ BEGIN;
 	  FROM pg_logical_emit_message(true, 'sent fourth', '#4');
   	SELECT 'non-transactional'
 	  FROM pg_logical_emit_message(false, 'sent last', '#3');
+	SELECT 'json'
+	  FROM pg_logical_emit_message(true, json_build_object('hello', 'world')::TEXT, '#5');
 COMMIT;
 
 SELECT *
