@@ -15,9 +15,9 @@
 
  { "message": "#1", "prefix": "sent first", "transactional": false }
  { "message": "#2", "prefix": "sent third", "transactional": false }
- { "message": "#3", "prefix": "sent last", "transactional": false }
+ { "message": "#3", "prefix": "sent fifth", "transactional": false }
  { "message": "#4", "prefix": "sent fourth", "transactional": true }
- { "message": "#5", "prefix": "{\"hello\" : \"world\"}", "transactional": true }
+ { "message": "{\"hello\" : \"world\"}", "prefix": "sent last", "transactional": true }
 
  deleted logical replication slot
 
