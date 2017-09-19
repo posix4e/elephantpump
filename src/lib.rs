@@ -84,17 +84,17 @@ unsafe extern "C" fn shutdown(ctx: *mut pg::Struct_LogicalDecodingContext) {
     pg::pfree((*ctx).output_plugin_private);
 }
 
-#[allow(unused_variables)]
-unsafe extern "C" fn message(ctx: *mut pg::Struct_LogicalDecodingContext,
-                             txn: *mut pg::ReorderBufferTXN,
-                             lsn: pg::XLogRecPtr,
-                             transactional: pg::_bool,
-                             prefix: *const std::os::raw::c_char,
-                             message_size: pg::Size,
-                             message: *const std::os::raw::c_char
+unsafe extern "C" fn message(
+    ctx: *mut pg::Struct_LogicalDecodingContext,
+    txn: *mut pg::ReorderBufferTXN,
+    lsn: pg::XLogRecPtr,
+    transactional: pg::_bool,
+    prefix: *const std::os::raw::c_char,
+    message_size: pg::Size,
+    message: *const std::os::raw::c_char,
 ) {
     pg::OutputPluginPrepareWrite(ctx, CTRUE);
-    append_message(transactional, prefix, message, (*ctx).out);
+    append_message(transactional, prefix, message_size, message, (*ctx).out);
     pg::OutputPluginWrite(ctx, CTRUE);
 }
 
@@ -309,19 +309,22 @@ unsafe fn append_schema(relation: pg::Relation, out: pg::StringInfo) {
     out.add_str(" }");
 }
 
-unsafe fn append_message(transactional: pg::_bool,
-                         prefix: *const std::os::raw::c_char,
-                         message: *const std::os::raw::c_char,
-                         out: pg::StringInfo) {
-
-    // { "message": %s, 
+unsafe fn append_message(
+    transactional: pg::_bool,
+    prefix: *const std::os::raw::c_char,
+    message_size: pg::Size,
+    message: *const std::os::raw::c_char,
+    out: pg::StringInfo,
+) {
+    // { "message": %s,
     out.add_str("{ ");
     out.add_json("message");
-    out.add_str(": ");
-    out.add_json(message);
-    out.add_str(", ");
+    out.add_str(": \"");
+    // TODO: Can we escape this like add_json?
+    pg::appendBinaryStringInfo(out, message, message_size as i32);
+    out.add_str("\", ");
 
-    // "prefix": %s, 
+    // "prefix": %s,
     out.add_json("prefix");
     out.add_str(": ");
     out.add_json(prefix);
@@ -330,7 +333,7 @@ unsafe fn append_message(transactional: pg::_bool,
     // "transactional": %s }
     out.add_json("transactional");
     out.add_str(": ");
-    
+
     if transactional == CTRUE {
         out.add_str("true");
     } else {
