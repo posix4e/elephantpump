@@ -33,7 +33,7 @@ EOF
 function linux {
   tools
 
-  VERSION=9.4
+  VERSION=9.6
   PG_DIR=/etc/postgresql/"$VERSION"/main
   HBA_CONF="$PG_DIR"/pg_hba.conf
   CONF="$PG_DIR"/postgresql.conf

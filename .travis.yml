@@ -3,8 +3,6 @@ sudo: required
 os:
   - linux
   - osx
-services:
-  - postgresql
 addons:
   postgresql: "9.6"
   apt:
