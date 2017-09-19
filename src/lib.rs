@@ -24,30 +24,36 @@ pub unsafe extern "C" fn init(cb: *mut pg::OutputPluginCallbacks) {
     (*cb).message_cb = Some(message);
 }
 
-unsafe extern "C" fn startup(ctx: *mut pg::Struct_LogicalDecodingContext,
-                             options: *mut pg::OutputPluginOptions,
-                             _is_init: pg::_bool) {
+unsafe extern "C" fn startup(
+    ctx: *mut pg::Struct_LogicalDecodingContext,
+    options: *mut pg::OutputPluginOptions,
+    _is_init: pg::_bool,
+) {
     use pg::Enum_OutputPluginOutputType::*;
     let last_relid = pg::palloc0(size_of::<pg::Oid>() as u64);
     (*ctx).output_plugin_private = last_relid;
     (*options).output_type = OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
 }
 
-unsafe extern "C" fn begin(ctx: *mut pg::Struct_LogicalDecodingContext,
-                           txn: *mut pg::ReorderBufferTXN) {
+unsafe extern "C" fn begin(
+    ctx: *mut pg::Struct_LogicalDecodingContext,
+    txn: *mut pg::ReorderBufferTXN,
+) {
     let s = CString::new("{ \"begin\": %u }").unwrap();
     pg::OutputPluginPrepareWrite(ctx, CTRUE);
     pg::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid);
     pg::OutputPluginWrite(ctx, CTRUE);
 }
 
-unsafe extern "C" fn change(ctx: *mut pg::Struct_LogicalDecodingContext,
-                            _txn: *mut pg::ReorderBufferTXN,
-                            relation: pg::Relation,
-                            change: *mut pg::ReorderBufferChange) {
+unsafe extern "C" fn change(
+    ctx: *mut pg::Struct_LogicalDecodingContext,
+    _txn: *mut pg::ReorderBufferTXN,
+    relation: pg::Relation,
+    change: *mut pg::ReorderBufferChange,
+) {
     let relid = (*relation).rd_id;
     let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as
-                                   *mut pg::Oid;
+        *mut pg::Oid;
     if *last_relid != relid {
         pg::OutputPluginPrepareWrite(ctx, CFALSE);
         append_schema(relation, (*ctx).out);
@@ -59,16 +65,18 @@ unsafe extern "C" fn change(ctx: *mut pg::Struct_LogicalDecodingContext,
     pg::OutputPluginWrite(ctx, CTRUE);
 }
 
-unsafe extern "C" fn commit(ctx: *mut pg::Struct_LogicalDecodingContext,
-                            txn: *mut pg::ReorderBufferTXN,
-                            _lsn: pg::XLogRecPtr) {
+unsafe extern "C" fn commit(
+    ctx: *mut pg::Struct_LogicalDecodingContext,
+    txn: *mut pg::ReorderBufferTXN,
+    _lsn: pg::XLogRecPtr,
+) {
     let s = CString::new("{ \"commit\": %u, \"t\": \"%s\" }").unwrap();
     let t = pg::timestamptz_to_str((*txn).commit_time);
     pg::OutputPluginPrepareWrite(ctx, CTRUE);
     pg::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid, t);
     pg::OutputPluginWrite(ctx, CTRUE);
     let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as
-                                   *mut pg::Oid;
+        *mut pg::Oid;
     *last_relid = 0;
 }
 
@@ -140,9 +148,11 @@ impl fmt::Display for Wrapped {
     }
 }
 
-unsafe fn append_change(relation: pg::Relation,
-                        change: *mut pg::ReorderBufferChange,
-                        out: pg::StringInfo) {
+unsafe fn append_change(
+    relation: pg::Relation,
+    change: *mut pg::ReorderBufferChange,
+    out: pg::StringInfo,
+) {
     use pg::Enum_ReorderBufferChangeType::*;
     let relid = (*relation).rd_id;
     let name = pg::get_rel_name(relid);
@@ -159,9 +169,13 @@ unsafe fn append_change(relation: pg::Relation,
         _ => "unrecognized",
     };
     if token == "unrecognized" {
-        log!(format!("Unrecognized Change Action: [ {} ]",
-                     Wrapped((*change).action))
-                 .as_str());
+        log!(
+            format!(
+                "Unrecognized Change Action: [ {} ]",
+                Wrapped((*change).action)
+            )
+            .as_str()
+        );
         return;
     }
     out.add_str("{ ");
@@ -180,9 +194,11 @@ unsafe fn append_change(relation: pg::Relation,
 }
 
 
-unsafe fn append_tuple_buf_as_json(data: *mut pg::ReorderBufferTupleBuf,
-                                   desc: pg::TupleDesc,
-                                   out: pg::StringInfo) {
+unsafe fn append_tuple_buf_as_json(
+    data: *mut pg::ReorderBufferTupleBuf,
+    desc: pg::TupleDesc,
+    out: pg::StringInfo,
+) {
     if !data.is_null() {
         let heap_tuple = &mut (*data).tuple;
         let n = (*desc).natts as usize;
@@ -193,10 +209,12 @@ unsafe fn append_tuple_buf_as_json(data: *mut pg::ReorderBufferTupleBuf,
         let mut nulls: Vec<pg::_bool> = Vec::new();
         datums.resize(n, 0);
         nulls.resize(n, CFALSE);
-        pg::heap_deform_tuple(heap_tuple,
-                              desc,
-                              datums.as_mut_ptr(),
-                              nulls.as_mut_ptr());
+        pg::heap_deform_tuple(
+            heap_tuple,
+            desc,
+            datums.as_mut_ptr(),
+            nulls.as_mut_ptr(),
+        );
 
         let mut skip: Vec<pg::Form_pg_attribute> = Vec::with_capacity(n);
 
@@ -346,9 +364,10 @@ extern "C" fn row_to_json(fcinfo: pg::FunctionCallInfo) -> pg::Datum {
             (((varattrib_1b_e *) (PTR))->va_tag)
 ```
 */
-unsafe fn is_stale_toast(datum: pg::Datum,
-                         attr: pg::Form_pg_attribute)
-                         -> bool {
+unsafe fn is_stale_toast(
+    datum: pg::Datum,
+    attr: pg::Form_pg_attribute,
+) -> bool {
     use pg::Enum_vartag_external::VARTAG_ONDISK;
     let mut o: pg::Oid = 0; // Output function; not used
     let mut is_variable_length: pg::_bool = CFALSE;
@@ -373,8 +392,9 @@ pub unsafe extern "C" fn _PG_init() {}
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern fn
-_PG_output_plugin_init(cb: *mut pg::OutputPluginCallbacks){
+pub unsafe extern "C" fn _PG_output_plugin_init(
+    cb: *mut pg::OutputPluginCallbacks,
+) {
     init(cb);
 }
 
@@ -386,12 +406,16 @@ const CFALSE: pg::_bool = 0;
 
 pub unsafe fn elog(file: &str, line: u32, function: &str, msg: &str) {
     let level = 15; // The LOG level of logging is normally server-only
-    pg::elog_start(CString::new(file).unwrap().as_ptr(),
-                   line as ::std::os::raw::c_int,
-                   CString::new(function).unwrap().as_ptr());
-    pg::elog_finish(level,
-                    CString::new("%s").unwrap().as_ptr(),
-                    CString::new(msg).unwrap().as_ptr());
+    pg::elog_start(
+        CString::new(file).unwrap().as_ptr(),
+        line as ::std::os::raw::c_int,
+        CString::new(function).unwrap().as_ptr(),
+    );
+    pg::elog_finish(
+        level,
+        CString::new("%s").unwrap().as_ptr(),
+        CString::new(msg).unwrap().as_ptr(),
+    );
 }
 
 pub unsafe fn fmt_name(name: pg::NameData) -> String {
