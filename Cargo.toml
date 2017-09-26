@@ -1,10 +1,14 @@
 [package]
 name = "jsoncdc"
-version = "0.0.10"
+version = "0.0.11"
 authors = ["Alex Newman <posi@planet.com>",
            "Jason Dusek <jason.dusek@gmail.com>"]
 build = "build.rs"
 
+
+[features]
+# Enables support for PG 9.6 (and later) logical decoding messages.
+pg-ldc-messages = ["serde_json", "base64"]
 
 [lib]
 name = "jsoncdc"
@@ -12,7 +16,9 @@ crate-type = ["dylib"]
 
 [dependencies]
 libc = "*"
+base64 = { version = "*", optional = true }
 rpgffi = "0.1.1"
+serde_json = { version = "1.*", optional = true }
 
 [dev-dependencies]
 rustfmt = "*"

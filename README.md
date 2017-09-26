@@ -45,13 +45,16 @@ A basic demo:
     SELECT * FROM pg_logical_slot_get_changes('jsoncdc', NULL, NULL);
 
 The output format of `jsoncdc` is very regular, consisting of `begin`,
-`table`, `insert`, `update` and `delete` clauses as JSON objects, one per line:
+`table`, `insert`, `update`, `delete` and [`message`][1]
+clauses as JSON objects, one per line:
 
     { "begin": <xid> }
     { "schema": <column names and type>, "table": <name of table> }
     ...inserts, updates and deletes for this table...
     { "schema": <column names and type>, "table": <name of next table> }
     ...inserts, updates and deletes for next table...
+    { "prefix": <prefix>, "message": <message>, "transactional": <true|false> }
+    ...messages may be mixed in at any point; they don't belong to a table...
     { "commit": <xid>, "t": <timestamp with timezone> }
 
 With `pg_recvlogical` and a little shell, you can leverage this very regular
@@ -70,8 +73,4 @@ formatting to get each transaction batched into a separate file:
       printf '%s\n' "$line" >&9       # Use printf because echo is non-portable
     done
 
-
-Formats
--------
-
-- [x] JSON output
+[1]: https://postgresql.org/message-id/flat/56D36A2C.3070807%402ndquadrant.com

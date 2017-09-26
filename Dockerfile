@@ -1,4 +1,4 @@
-FROM postgres:9.5
+FROM postgres:9.6
 
 ENV PATH ~/.cargo/bin/:$PATH
 ENV CARGO_HOME /cargo

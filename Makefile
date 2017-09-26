@@ -8,7 +8,9 @@ REGRESS      = $(patsubst test/sql/%.sql,%,$(TESTS))
 REGRESS_OPTS = --inputdir=test --load-language=plpgsql
 PG_CONFIG    = pg_config
 PG91         = $(shell $(PG_CONFIG) --version | \
-                       grep -qE " 8\.| 9\.0" && echo no || echo yes)
+                       grep -qE " 8[.]| 9[.]0" && echo no || echo yes)
+PG96         = $(shell $(PG_CONFIG) --version | \
+                       grep -qE " 8[.]| 9[.][0-5]" && echo no || echo yes)
 
 ifeq ($(PG91),yes)
 all: sql/$(EXTENSION)--$(EXTVERSION).sql
@@ -21,19 +23,24 @@ endif
 
 
 # Note that `MODULES = jsoncdc` implies a dependency on `jsoncdc.so`.
-MODULES      = jsoncdc
+MODULES     := jsoncdc
 PGXX        := $(shell util/get_version)
 HAZRUST     := $(shell which cargo >/dev/null && echo yes || echo no)
 
 ifeq ($(shell uname -s),Darwin)
-LINK_FLAGS   = -C link-args='-Wl,-undefined,dynamic_lookup'
+LINK_FLAGS  := -C link-args='-Wl,-undefined,dynamic_lookup'
 endif
 
+ifeq ($(PG96),yes)
+FEATURES    := --features pg-ldc-messages
+else
+REGRESS     := $(subst message,,$(REGRESS))
+endif
 
 ifeq ($(HAZRUST),yes)
 .PHONY: jsoncdc.so
 jsoncdc.so:
-	cargo rustc --release -- $(LINK_FLAGS)
+	cargo rustc $(FEATURES) --release -- $(LINK_FLAGS)
 	cp target/release/libjsoncdc.* $@
 
 .PHONY: cargoclean
