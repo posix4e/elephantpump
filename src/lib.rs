@@ -36,18 +36,18 @@ pub unsafe extern "C" fn init(cb: *mut pg::OutputPluginCallbacks) {
 }
 
 unsafe extern "C" fn startup(
-    ctx: *mut pg::Struct_LogicalDecodingContext,
+    ctx: *mut pg::LogicalDecodingContext,
     options: *mut pg::OutputPluginOptions,
-    _is_init: pg::_bool,
+    _is_init: pg::bool_,
 ) {
-    use pg::Enum_OutputPluginOutputType::*;
-    let last_relid = pg::palloc0(size_of::<pg::Oid>() as u64);
+    let last_relid = pg::palloc0(size_of::<pg::Oid>());
     (*ctx).output_plugin_private = last_relid;
-    (*options).output_type = OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
+    (*options).output_type =
+        pg::OutputPluginOutputType::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
 }
 
 unsafe extern "C" fn begin(
-    ctx: *mut pg::Struct_LogicalDecodingContext,
+    ctx: *mut pg::LogicalDecodingContext,
     txn: *mut pg::ReorderBufferTXN,
 ) {
     let s = CString::new("{ \"begin\": %u }").unwrap();
@@ -57,7 +57,7 @@ unsafe extern "C" fn begin(
 }
 
 unsafe extern "C" fn change(
-    ctx: *mut pg::Struct_LogicalDecodingContext,
+    ctx: *mut pg::LogicalDecodingContext,
     _txn: *mut pg::ReorderBufferTXN,
     relation: pg::Relation,
     change: *mut pg::ReorderBufferChange,
@@ -77,7 +77,7 @@ unsafe extern "C" fn change(
 }
 
 unsafe extern "C" fn commit(
-    ctx: *mut pg::Struct_LogicalDecodingContext,
+    ctx: *mut pg::LogicalDecodingContext,
     txn: *mut pg::ReorderBufferTXN,
     _lsn: pg::XLogRecPtr,
 ) {
@@ -91,16 +91,16 @@ unsafe extern "C" fn commit(
     *last_relid = 0;
 }
 
-unsafe extern "C" fn shutdown(ctx: *mut pg::Struct_LogicalDecodingContext) {
+unsafe extern "C" fn shutdown(ctx: *mut pg::LogicalDecodingContext) {
     pg::pfree((*ctx).output_plugin_private);
 }
 
 #[cfg(feature = "pg-ldc-messages")]
 unsafe extern "C" fn message(
-    ctx: *mut pg::Struct_LogicalDecodingContext,
+    ctx: *mut pg::LogicalDecodingContext,
     _txn: *mut pg::ReorderBufferTXN,
     _lsn: pg::XLogRecPtr,
-    transactional: pg::_bool,
+    transactional: pg::bool_,
     prefix: *const std::os::raw::c_char,
     message_size: pg::Size,
     message: *const std::os::raw::c_char,
@@ -178,11 +178,11 @@ impl PGAppend<OutputBytesInMostFriendlyWay> for pg::StringInfo {
 }
 
 
-struct BufferChangeWrapper(pg::Enum_ReorderBufferChangeType);
+struct BufferChangeWrapper(pg::ReorderBufferChangeType);
 
 impl fmt::Display for BufferChangeWrapper {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use pg::Enum_ReorderBufferChangeType::*;
+        use pg::ReorderBufferChangeType::*;
         #[allow(unreachable_patterns)]
         let formatted_token = match self.0 {
             REORDER_BUFFER_CHANGE_INSERT => "insert",
@@ -205,15 +205,15 @@ unsafe fn append_change(
     change: *mut pg::ReorderBufferChange,
     out: pg::StringInfo,
 ) {
-    use pg::Enum_ReorderBufferChangeType::*;
+    use pg::ReorderBufferChangeType::*;
     let relid = (*relation).rd_id;
     let name = pg::get_rel_name(relid);
     let ns = pg::get_namespace_name(pg::get_rel_namespace(relid));
     let qualified_name = pg::quote_qualified_identifier(ns, name);
     let tuple_desc = (*relation).rd_att;
-    let tuples = (*change).data.tp();
-    let tuple_new = (*tuples).newtuple;
-    let tuple_old = (*tuples).oldtuple;
+    let tuples = (*change).data.tp;
+    let tuple_new = tuples.newtuple;
+    let tuple_old = tuples.oldtuple;
     let token = match (*change).action {
         REORDER_BUFFER_CHANGE_INSERT => "insert",
         REORDER_BUFFER_CHANGE_UPDATE => "update",
@@ -258,7 +258,7 @@ unsafe fn append_tuple_buf_as_json(
 
         // Pull out every single field to check for stale TOAST.
         let mut datums: Vec<pg::Datum> = Vec::new();
-        let mut nulls: Vec<pg::_bool> = Vec::new();
+        let mut nulls: Vec<pg::bool_> = Vec::new();
         datums.resize(n, 0);
         nulls.resize(n, CFALSE);
         pg::heap_deform_tuple(
@@ -302,7 +302,7 @@ unsafe fn append_tuple_buf_as_json(
             (**attr).attisdropped = CFALSE;
         }
 
-        let ptr = json as *const pg::Struct_varlena;
+        let ptr = json as *const pg::varlena;
         let text = pg::text_to_cstring(ptr);
         pg::appendStringInfoString(out, text);
 
@@ -363,7 +363,7 @@ unsafe fn append_schema(relation: pg::Relation, out: pg::StringInfo) {
 
 #[cfg(feature = "pg-ldc-messages")]
 unsafe fn append_message(
-    transactional: pg::_bool,
+    transactional: pg::bool_,
     prefix: *const std::os::raw::c_char,
     message_size: pg::Size,
     message: *const std::os::raw::c_char,
@@ -426,9 +426,9 @@ unsafe fn is_stale_toast(
     datum: pg::Datum,
     attr: pg::Form_pg_attribute,
 ) -> bool {
-    use pg::Enum_vartag_external::VARTAG_ONDISK;
+    use pg::vartag_external::VARTAG_ONDISK;
     let mut o: pg::Oid = 0; // Output function; not used
-    let mut is_variable_length: pg::_bool = CFALSE;
+    let mut is_variable_length: pg::bool_ = CFALSE;
     pg::getTypeOutputInfo((*attr).atttypid, &mut o, &mut is_variable_length);
     if is_variable_length == CTRUE {
         // Cast to varlena metadata type.
@@ -459,8 +459,8 @@ pub unsafe extern "C" fn _PG_output_plugin_init(
 
 // Miscellaneous.
 
-const CTRUE: pg::_bool = 1;
-const CFALSE: pg::_bool = 0;
+const CTRUE: pg::bool_ = 1;
+const CFALSE: pg::bool_ = 0;
 
 pub unsafe fn elog(file: &str, line: u32, function: &str, msg: &str) {
     let level = 15; // The LOG level of logging is normally server-only

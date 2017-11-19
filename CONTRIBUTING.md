@@ -20,7 +20,7 @@ You can use the project's [Dockerfile](Dockerfile) to get a working development 
 Build the image locally:
 
 ```sh
-docker build -t jsoncdc-dev:9.5 .
+docker build -t jsoncdc-dev:9.5 --build-arg PG_VERSION=9.5 .
 ```
 
 Start the container by mapping the source code volume - this should be done on the directory where you've checked out jsoncdc:

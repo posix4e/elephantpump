@@ -17,7 +17,7 @@ crate-type = ["dylib"]
 [dependencies]
 libc = "*"
 base64 = { version = "*", optional = true }
-rpgffi = "0.1.1"
+rpgffi = "0.3.1"
 serde_json = { version = "1.*", optional = true }
 
 [dev-dependencies]
