@@ -38,10 +38,15 @@ REGRESS     := $(subst message,,$(REGRESS))
 endif
 
 ifeq ($(HAZRUST),yes)
-.PHONY: jsoncdc.so
-jsoncdc.so:
+.PHONY: cargo
+cargo:
 	cargo rustc $(FEATURES) --release -- $(LINK_FLAGS)
-	cp target/release/libjsoncdc.[so\|dll] $@
+
+.PHONY: jsoncdc.so
+jsoncdc.so: base := target/release
+jsoncdc.so: lib = $(wildcard $(base)/libjsoncdc.so $(base)/libjsoncdc.dylib)
+jsoncdc.so: cargo
+	cp $(lib) $@
 
 .PHONY: cargoclean
 cargoclean:
