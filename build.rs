@@ -1,4 +1,4 @@
-extern crate gcc;
+extern crate cc;
 
 use std::process::Command;
 
@@ -45,7 +45,7 @@ fn pg_config() -> PGConfig {
 
 fn main() {
     let config = pg_config();
-    gcc::Build::new()
+    cc::Build::new()
         .file("src/magic.c")
         .include(config.includedir)
         .include(config.includedir_server)

@@ -15,8 +15,8 @@ name = "jsoncdc"
 crate-type = ["dylib"]
 
 [dependencies]
-libc = "*"
-base64 = { version = "*", optional = true }
+libc = "^0.2.36"
+base64 = { version = "^0.9", optional = true }
 rpgffi = "0.3.3"
 serde_json = { version = "1.*", optional = true }
 
@@ -24,4 +24,4 @@ serde_json = { version = "1.*", optional = true }
 rustfmt = "*"
 
 [build-dependencies]
-gcc = "*"
+cc = "^1.0.4"
