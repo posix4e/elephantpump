@@ -1,5 +1,5 @@
 ideal_width            = 79
-max_width              = 79
+max_width              = 100
 
 fn_single_line         = true
 struct_lit_width       = 50

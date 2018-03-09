@@ -13,13 +13,11 @@ extern crate rpgffi as pg;
 #[cfg(feature = "pg-ldc-messages")]
 extern crate serde_json;
 
-
 macro_rules! log {
     ($msg:expr) => {
         elog(file!(), line!(), "log()", $msg)
     }
 }
-
 
 // Implementation of initialization and callbacks.
 
@@ -42,14 +40,10 @@ unsafe extern "C" fn startup(
 ) {
     let last_relid = pg::palloc0(size_of::<pg::Oid>());
     (*ctx).output_plugin_private = last_relid;
-    (*options).output_type =
-        pg::OutputPluginOutputType::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
+    (*options).output_type = pg::OutputPluginOutputType::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
 }
 
-unsafe extern "C" fn begin(
-    ctx: *mut pg::LogicalDecodingContext,
-    txn: *mut pg::ReorderBufferTXN,
-) {
+unsafe extern "C" fn begin(ctx: *mut pg::LogicalDecodingContext, txn: *mut pg::ReorderBufferTXN) {
     let s = CString::new("{ \"begin\": %u }").unwrap();
     pg::OutputPluginPrepareWrite(ctx, CTRUE);
     pg::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid);
@@ -63,8 +57,7 @@ unsafe extern "C" fn change(
     change: *mut pg::ReorderBufferChange,
 ) {
     let relid = (*relation).rd_id;
-    let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as
-        *mut pg::Oid;
+    let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as *mut pg::Oid;
     if *last_relid != relid {
         pg::OutputPluginPrepareWrite(ctx, CFALSE);
         append_schema(relation, (*ctx).out);
@@ -81,13 +74,30 @@ unsafe extern "C" fn commit(
     txn: *mut pg::ReorderBufferTXN,
     _lsn: pg::XLogRecPtr,
 ) {
-    let s = CString::new("{ \"commit\": %u, \"t\": \"%s\" }").unwrap();
+    let j = r#"{ "commit": %u, "epoch": %u, "t": "%s", "c_txid": %u, "xmin": %u, "c_xmin": %u }"#;
+    let s = CString::new(j).expect("Failed to allocate CString");
     let t = pg::timestamptz_to_str((*txn).commit_time);
+    let slot = (*ctx).slot;
+    let xmin = (*slot).effective_xmin;
+    let c_xmin = (*slot).effective_catalog_xmin;
+    let mut epoch: pg::uint32 = 0;
+    let epoch_ptr: *mut pg::uint32 = &mut epoch;
+    let mut nt: pg::TransactionId = 0;
+    let nt_ptr: *mut pg::TransactionId = &mut nt;
+    pg::GetNextXidAndEpoch(nt_ptr, epoch_ptr);
     pg::OutputPluginPrepareWrite(ctx, CTRUE);
-    pg::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid, t);
+    pg::appendStringInfo(
+        (*ctx).out,
+        s.as_ptr(),
+        nt,
+        epoch,
+        t,
+        (*txn).xid,
+        xmin,
+        c_xmin,
+    );
     pg::OutputPluginWrite(ctx, CTRUE);
-    let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as
-        *mut pg::Oid;
+    let last_relid: *mut pg::Oid = (*ctx).output_plugin_private as *mut pg::Oid;
     *last_relid = 0;
 }
 
@@ -130,9 +140,7 @@ impl PGAppend<*mut i8> for pg::StringInfo {
 }
 
 impl PGAppend<*const i8> for pg::StringInfo {
-    unsafe fn add_str(self, t: *const i8) {
-        pg::appendStringInfoString(self, t);
-    }
+    unsafe fn add_str(self, t: *const i8) { pg::appendStringInfoString(self, t); }
     unsafe fn add_json(self, t: *const i8) { pg::escape_json(self, t); }
 }
 
@@ -155,8 +163,7 @@ impl PGAppend<OutputBytesInMostFriendlyWay> for pg::StringInfo {
         if !bytes.contains(&0) {
             if let Ok(ref s) = String::from_utf8(bytes.to_vec()) {
                 if s.trim_left().starts_with("{") {
-                    let parsed: serde_json::Result<serde_json::Value> =
-                        serde_json::from_str(s);
+                    let parsed: serde_json::Result<serde_json::Value> = serde_json::from_str(s);
                     if let Ok(ref json) = parsed {
                         self.add_str(json.to_string().deref());
                         return;
@@ -194,7 +201,7 @@ impl fmt::Display for BufferChangeWrapper {
             #[cfg_attr(rustfmt, rustfmt_skip)]
             REORDER_BUFFER_CHANGE_INTERNAL_SPEC_INSERT =>
                 "internal_spec_insert",
-            _ => "unknown_change_type",   // NB: Unreachable after Postgres 9.4
+            _ => "unknown_change_type", // NB: Unreachable after Postgres 9.4
         };
         write!(f, "{}", formatted_token)
     }
@@ -245,7 +252,6 @@ unsafe fn append_change(
     out.add_str(" }");
 }
 
-
 unsafe fn append_tuple_buf_as_json(
     data: *mut pg::ReorderBufferTupleBuf,
     desc: pg::TupleDesc,
@@ -261,12 +267,7 @@ unsafe fn append_tuple_buf_as_json(
         let mut nulls: Vec<pg::bool_> = Vec::new();
         datums.resize(n, 0);
         nulls.resize(n, CFALSE);
-        pg::heap_deform_tuple(
-            heap_tuple,
-            desc,
-            datums.as_mut_ptr(),
-            nulls.as_mut_ptr(),
-        );
+        pg::heap_deform_tuple(heap_tuple, desc, datums.as_mut_ptr(), nulls.as_mut_ptr());
 
         let mut skip: Vec<pg::Form_pg_attribute> = Vec::with_capacity(n);
 
@@ -288,13 +289,11 @@ unsafe fn append_tuple_buf_as_json(
             (**attr).attisdropped = CTRUE;
         }
 
-        let new =
-            pg::heap_form_tuple(desc, datums.as_mut_ptr(), nulls.as_mut_ptr());
+        let new = pg::heap_form_tuple(desc, datums.as_mut_ptr(), nulls.as_mut_ptr());
 
         let datum = pg::heap_copy_tuple_as_datum(new, desc);
         let empty_oid: pg::Oid = 0;
-        let json =
-            pg::DirectFunctionCall1Coll(Some(row_to_json), empty_oid, datum);
+        let json = pg::DirectFunctionCall1Coll(Some(row_to_json), empty_oid, datum);
 
         // Set back to true because who knows how else these attrs, which are
         // part of the passed in tuple description, are being used.
@@ -369,10 +368,7 @@ unsafe fn append_message(
     message: *const std::os::raw::c_char,
     out: pg::StringInfo,
 ) {
-    let data = OutputBytesInMostFriendlyWay(
-        message as *const u8,
-        message_size as usize,
-    );
+    let data = OutputBytesInMostFriendlyWay(message as *const u8, message_size as usize);
 
     out.add_str("{ ");
 
@@ -422,10 +418,7 @@ extern "C" fn row_to_json(fcinfo: pg::FunctionCallInfo) -> pg::Datum {
             (((varattrib_1b_e *) (PTR))->va_tag)
 ```
 */
-unsafe fn is_stale_toast(
-    datum: pg::Datum,
-    attr: pg::Form_pg_attribute,
-) -> bool {
+unsafe fn is_stale_toast(datum: pg::Datum, attr: pg::Form_pg_attribute) -> bool {
     use pg::vartag_external::VARTAG_ONDISK;
     let mut o: pg::Oid = 0; // Output function; not used
     let mut is_variable_length: pg::bool_ = CFALSE;
@@ -441,7 +434,6 @@ unsafe fn is_stale_toast(
     return false;
 }
 
-
 // Symbols Postgres needs to find.
 
 #[allow(non_snake_case)]
@@ -450,12 +442,7 @@ pub unsafe extern "C" fn _PG_init() {}
 
 #[allow(non_snake_case)]
 #[no_mangle]
-pub unsafe extern "C" fn _PG_output_plugin_init(
-    cb: *mut pg::OutputPluginCallbacks,
-) {
-    init(cb);
-}
-
+pub unsafe extern "C" fn _PG_output_plugin_init(cb: *mut pg::OutputPluginCallbacks) { init(cb); }
 
 // Miscellaneous.
 

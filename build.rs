@@ -2,14 +2,12 @@ extern crate cc;
 
 use std::process::Command;
 
-
 #[derive(Default)]
 struct PGConfig {
     includedir: String,
     includedir_server: String,
     libdir: String,
 }
-
 
 fn pg_config() -> PGConfig {
     let output = Command::new("pg_config").output().unwrap_or_else(|e| {
@@ -26,9 +24,7 @@ fn pg_config() -> PGConfig {
 
     let mut config = PGConfig { ..Default::default() };
 
-    let text = String::from_utf8(output.stdout).expect(
-        "Expected UTF-8 from call to `pg_config`.",
-    );
+    let text = String::from_utf8(output.stdout).expect("Expected UTF-8 from call to `pg_config`.");
 
     for words in text.lines().map(|line| line.split_whitespace()) {
         let vec: Vec<&str> = words.collect();

@@ -81,5 +81,5 @@ all: jsoncdc.so
 
 .PHONY: test
 test:
-	pgxn check ./
+	pgxn check -U postgres ./
 	util/checkstyle
