@@ -8,7 +8,7 @@ ENV SRC_PATH /src
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
-    ca-certificates curl git make gcc gcc-multilib postgresql-server-dev-$PG_MAJOR \
+    ca-certificates curl git make gcc gcc-multilib postgresql-server-dev-$PG_MAJOR=$PG_VERSION \
     python-pip python-setuptools \
   && rm -rf /var/lib/apt/lists/* \
   && curl -sf https://static.rust-lang.org/rustup.sh -o rustup.sh \

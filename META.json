@@ -36,4 +36,42 @@
       "version": "1.0.0",
       "url": "http://pgxn.org/meta/spec.txt"
   }
+    "name": "jsoncdc",
+    "abstract": "Translates Postgres WAL to JSON",
+    "description": "A Rust plugin for Postgres Change Data Capture.",
+    "version": "0.0.12",
+    "maintainer": [
+        "Alex Newman <posi@planet.com>",
+        "Jason Dusek <jason.dusek@gmail.com>"
+    ],
+    "license": {
+        "PostgreSQL": "http://www.postgresql.org/about/licence",
+        "Apache": "http://www.apache.org/licenses/LICENSE-2.0"
+    },
+    "provides": {
+        "jsoncdc": {
+            "abstract": "Translates Postgres WAL to JSON",
+            "file": "sql/jsoncdc.sql",
+            "docfile": "doc/jsoncdc.md",
+            "version": "0.0.12"
+        }
+    },
+    "release_status": "unstable",
+    "resources": {
+        "bugtracker": {
+            "web": "https://github.com/posix4e/jsoncdc/issues"
+        },
+        "repository": {
+          "url":  "https://github.com/posix4e/jsoncdc.git",
+          "web":  "https://github.com/posix4e/jsoncdc",
+          "type": "git"
+        }
+    },
+
+    "generated_by": "Jason Dusek",
+
+    "meta-spec": {
+        "version": "1.0.0",
+        "url": "http://pgxn.org/meta/spec.txt"
+    }
 }

@@ -1,6 +1,7 @@
 [package]
 name = "jsoncdc"
 version = "0.1.0"
+
 authors = ["Alex Newman <posi@planet.com>",
            "Jason Dusek <jason.dusek@gmail.com>",
            "Eric Coan <kungfury@instructure.com>"]
@@ -16,9 +17,8 @@ name = "jsoncdc"
 crate-type = ["dylib"]
 
 [dependencies]
-libc = "^0.2.36"
-base64 = { version = "^0.9", optional = true }
-rpgffi = "0.3.3"
+libc ="^0.2.36"
+base64 = { version = "^0.9", optional = true }rpgffi = "0.3.3"
 serde_json = { version = "1.*", optional = true }
 
 [dev-dependencies]

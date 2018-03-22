@@ -43,7 +43,10 @@ unsafe extern "C" fn startup(
     (*options).output_type = pg::OutputPluginOutputType::OUTPUT_PLUGIN_TEXTUAL_OUTPUT;
 }
 
-unsafe extern "C" fn begin(ctx: *mut pg::LogicalDecodingContext, txn: *mut pg::ReorderBufferTXN) {
+unsafe extern "C" fn begin(
+    ctx: *mut pg::LogicalDecodingContext,
+    txn: *mut pg::ReorderBufferTXN,
+) {
     let s = CString::new("{ \"begin\": %u }").unwrap();
     pg::OutputPluginPrepareWrite(ctx, CTRUE);
     pg::appendStringInfo((*ctx).out, s.as_ptr(), (*txn).xid);
