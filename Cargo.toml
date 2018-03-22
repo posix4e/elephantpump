@@ -1,8 +1,9 @@
 [package]
 name = "jsoncdc"
-version = "0.0.12"
+version = "0.1.0"
 authors = ["Alex Newman <posi@planet.com>",
-           "Jason Dusek <jason.dusek@gmail.com>"]
+           "Jason Dusek <jason.dusek@gmail.com>",
+           "Eric Coan <kungfury@instructure.com>"]
 build = "build.rs"
 
 

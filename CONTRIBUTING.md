@@ -8,7 +8,7 @@ Please ensure that contributed Bash, SQL, Python and other files all:
 
 1. resemble the surrounding code, and
 
-2. contain lines no longer than 79 columns.
+2. contain lines no longer than 100 columns.
 
 Using Docker for development
 ----------------------------

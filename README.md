@@ -1,11 +1,6 @@
 JSONCDC
 =======
 
-[![Join the chat at https://gitter.im/posix4e/jsoncdc](https://badges.gitter.im/posix4e/jsoncdc.svg)](https://gitter.im/posix4e/jsoncdc?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![HuBoard badge](http://img.shields.io/badge/Hu-Board-7965cc.svg)](https://huboard.com/posix4e/jsoncdc)
-[![Linux Status](https://travis-ci.org/posix4e/jsoncdc.svg?branch=master)](https://travis-ci.org/posix4e/jsoncdc)
-[![Chat on Freenode](https://img.shields.io/badge/freenode-%23jsoncdc-brightgreen.svg)](irc://chat.freenode.net/jsoncdc)
-
 JSONCDC provides change data capture for Postgres, translating the Postgres
 write ahead log to JSON.
 
@@ -15,11 +10,11 @@ would be plugin authors who'd like to use Rust to write Postgres extensions.
 Our library Requires rust stable 1.1 or greater.
 
 
-
 Copyright and License
 ---------------------
 
 Copyright (c) 2016 Alex Newman, Jason Dusek
+Copyright (c) 2018 Instructure, Inc.
 
 JSONCDC is available under multiple licenses:
 
@@ -31,9 +26,8 @@ JSONCDC is available under multiple licenses:
 Status
 ------
 
-JSONCDC is presently installable with `pgxn`, from the unstable channel:
-`pgxn install jsoncdc --unstable`.
-
+JSONCDC is presently installable with `pgxn`, from the testing channel:
+`pgxn install jsoncdc --testing`.
 
 Usage
 -----

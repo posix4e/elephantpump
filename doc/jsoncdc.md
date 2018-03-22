@@ -28,17 +28,18 @@ Usage
 Support
 -------
 
-  https://github.com/posix4e/jsoncdc
-  https://github.com/posix4e/jsoncdc/issues
+  https://github.com/instructure/jsoncdc
+  https://github.com/instructure/jsoncdc/issues
 
 Author
 ------
 
   * [Alex Newman](https://github.com/posix4e)
   * [Jason Dusek](https://github.com/solidsnack)
+  * [Eric Coan](https://github.com/SecurityInsanity)
 
 Copyright and License
 ---------------------
 
 Copyright (c) 2016 Alex Newman, Jason Dusek
-
+Copyright (c) 2018 Instructure Inc.
